@@ -177,7 +177,7 @@ function scoreColor(s){return s>=8?"#3dd68c":s>=6?"#f0c830":s>=4?"#f0a030":"#e05
 var curLat=-34.8952,curLng=138.6634,curName="Forestville, South Australia";
 var hourlyChartInst=null,detailChartInst=null,wxData=null;
 
-var wtKey = localStorage.getItem("wtKey") || "6febe8fb-76ee-44ca-ad51-f5378052cd43";
+var wtKey = localStorage.getItem("wtKey") || "";
 var wtTideData = null; // cached response from WorldTides
 
 function saveWTKey(){
@@ -194,9 +194,12 @@ if(wtKey) document.getElementById("wtKeyInput").value=wtKey;
 async function fetchWorldTides(lat, lng){
   if(!wtKey) return null;
   try{
-    var midnight = new Date(); midnight.setHours(0,0,0,0);
-    var dateStr = midnight.getFullYear()+"-"+(midnight.getMonth()+1).toString().padStart(2,"0")+"-"+midnight.getDate().toString().padStart(2,"0");
-    var url = "https://www.worldtides.info/api/v3?heights&extremes&datum=MSL&lat="+lat+"&lon="+lng+"&date="+dateStr+"&days=7&step=1800&key="+wtKey;
+    // Use Adelaide local date
+    var now=new Date();
+    var adelaideOffset=9.5*60*60000;
+    var adelaideNow=new Date(now.getTime()+adelaideOffset-(now.getTimezoneOffset()*60000));
+    var dateStr=adelaideNow.getFullYear()+"-"+(adelaideNow.getMonth()+1).toString().padStart(2,"0")+"-"+adelaideNow.getDate().toString().padStart(2,"0");
+    var url = "https://www.worldtides.info/api/v3?heights&extremes&datum=MSL&timezone=Australia/Adelaide&lat="+lat+"&lon="+lng+"&date="+dateStr+"&days=7&step=1800&key="+wtKey;
     var r = await fetch(url);
     var d = await r.json();
     if(d.status === 200) return d;
@@ -208,22 +211,20 @@ async function fetchWorldTides(lat, lng){
   }
 }
 
-function getWTHeightsForDay(wtData, dayOffset){
-  // Returns array of 49 height values (midnight to midnight + 30min buffer) for given day offset
-  if(!wtData || !wtData.heights) return null;
-  var midnight = new Date(); midnight.setHours(0,0,0,0);
-  var dayStart = midnight.getTime()/1000 + dayOffset*86400;
-  var dayEnd = dayStart + 48*1800; // 24 hours = 48 half-hour steps
-  var pts = [];
-  for(var i=0; i<=96; i++){
-    var targetT = dayStart + i*1800;
-    // Find closest height entry
-    var best = null, bestDiff = Infinity;
-    for(var j=0; j<wtData.heights.length; j++){
-      var diff = Math.abs(wtData.heights[j].dt - targetT);
-      if(diff < bestDiff){ bestDiff = diff; best = wtData.heights[j]; }
+function getWTHeightsForDay(wtData,dayOffset){
+  if(!wtData||!wtData.heights)return null;
+  var midnight=new Date();midnight.setHours(0,0,0,0);
+  // dayOffset -1 = yesterday, 0 = today, 1 = tomorrow etc
+  var dayStart=midnight.getTime()/1000+dayOffset*86400;
+  var pts=[];
+  for(var i=0;i<=96;i++){
+    var targetT=dayStart+i*1800;
+    var best=null,bestDiff=Infinity;
+    for(var j=0;j<wtData.heights.length;j++){
+      var diff=Math.abs(wtData.heights[j].dt-targetT);
+      if(diff<bestDiff){bestDiff=diff;best=wtData.heights[j];}
     }
-    pts.push(best ? parseFloat(best.height.toFixed(3)) : 0);
+    pts.push(best?parseFloat(best.height.toFixed(3)):0);
   }
   return pts;
 }
