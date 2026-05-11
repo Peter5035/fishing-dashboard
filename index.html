@@ -346,7 +346,10 @@ function drawMainChart(wx){
   var tidePts=[];
   for(var d=0;d<DN;d++)tidePts=tidePts.concat(getTidePts(d).slice(0,49));
   var tMx=Math.max.apply(null,tidePts)*1.08;
-  function tY(v){return tT+tH*(1-Math.max(0,v)/tMx);}
+  var tMnRaw=Math.min.apply(null,tidePts);
+  var tMn=tMnRaw>=0?-0.05:tMnRaw*1.15; // padding below: 5cm below zero, or 15% below negative minimum
+  var tRange=tMx-tMn;
+  function tY(v){return tT+tH*(1-(v-tMn)/tRange);}
   function tX(i){return xF(i*HRS/tidePts.length);}
 
   // Rain overlaid on tide zone
@@ -369,16 +372,16 @@ function drawMainChart(wx){
 
   // Tide grid + right axis
   [0.5,1.0,1.5,2.0,2.5,3.0].forEach(function(v){
-    if(v<tMx){
+    if(v>tMn&&v<tMx){
       ctx.beginPath();ctx.setLineDash([2,4]);ctx.strokeStyle="rgba(74,154,223,0.20)";
       ctx.moveTo(pL,tY(v));ctx.lineTo(W-pR,tY(v));ctx.stroke();ctx.setLineDash([]);
       ctx.fillStyle="#3a6a90";ctx.font="9px system-ui";ctx.fillText(v.toFixed(1)+"m",W-pR+3,tY(v)+3);
     }
   });
   ctx.beginPath();ctx.fillStyle="rgba(74,154,223,0.22)";
-  ctx.moveTo(tX(0),tT+tH);
+  ctx.moveTo(tX(0),tY(tMn));
   for(var i=0;i<tidePts.length;i++)ctx.lineTo(tX(i),tY(tidePts[i]));
-  ctx.lineTo(tX(tidePts.length-1),tT+tH);ctx.closePath();ctx.fill();
+  ctx.lineTo(tX(tidePts.length-1),tY(tMn));ctx.closePath();ctx.fill();
   ctx.beginPath();ctx.strokeStyle="#4a9adf";ctx.lineWidth=2;ctx.setLineDash([]);
   for(var i=0;i<tidePts.length;i++){if(i===0)ctx.moveTo(tX(i),tY(tidePts[i]));else ctx.lineTo(tX(i),tY(tidePts[i]));}
   ctx.stroke();
