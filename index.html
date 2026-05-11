@@ -370,18 +370,20 @@ function drawMainChart(wx){
   // Wind arrows
   var winds=wx.hourly.wind_speed_10m.slice(0,HRS);
   var wdirs=wx.hourly.wind_direction_10m?wx.hourly.wind_direction_10m.slice(0,HRS):[];
-  var wMx=Math.ceil(Math.max(Math.max.apply(null,winds),25)/10)*10;
-  var wStep=wMx<=20?5:wMx<=40?10:wMx<=60?10:20;
-  function wY(spd){return wT+wH*(1-spd/wMx);}
-  for(var spd=wStep;spd<=wMx;spd+=wStep){
+  var wMin=Math.max(0,Math.floor(Math.min.apply(null,winds)/5)*5-5);
+  var wMx=Math.ceil(Math.max(Math.max.apply(null,winds),wMin+10)/10)*10;
+  var wStep=wMx-wMin<=20?5:wMx-wMin<=40?10:20;
+  function wY(spd){return wT+wH*(1-(spd-wMin)/(wMx-wMin));}
+  for(var spd=wMin+wStep;spd<=wMx;spd+=wStep){
     ctx.beginPath();ctx.setLineDash([2,4]);ctx.strokeStyle="rgba(74,120,180,0.18)";
     ctx.moveTo(pL,wY(spd));ctx.lineTo(W-pR,wY(spd));ctx.stroke();ctx.setLineDash([]);
     ctx.fillStyle="#3a6a90";ctx.font="9px system-ui";ctx.fillText(spd,W-pR+3,wY(spd)+3);
   }
   ctx.fillStyle="#5a8ab0";ctx.font="9px system-ui";ctx.fillText("km/h",W-pR+3,wT+8);
   ctx.fillStyle="#5a8ab0";ctx.font="9px system-ui";ctx.fillText("Wind",2,wT+10);
-  var arrowStep=tideDays>=5?3:tideDays>=3?2:1;
-  for(var h=0;h<HRS;h+=arrowStep*2){
+  // Wind arrows — as dense as readable (every 1hr for 1day, every 1.5hr for 3day, every 2hr for 5-7day)
+  var arrowStep=tideDays<=1?1:tideDays<=3?1:2;
+  for(var h=0;h<HRS;h+=arrowStep){
     var spd=winds[h]||0,dir=wdirs[h]!=null?wdirs[h]:0;
     var cy=Math.max(wT+6,Math.min(wT+wH-6,wY(spd)));
     var x=xF(h+0.5),aLen=6+Math.min(spd/wMx,1)*10;
@@ -408,7 +410,46 @@ function drawMainChart(wx){
     ctx.fillText((h%24).toString().padStart(2,"0")+":00",xF(h)-8,pT+cH+12);
   }
 
-  // Tide extremes legend
+  // Hover tooltip
+  canvas.onmousemove=function(e){
+    var rect=canvas.getBoundingClientRect();
+    var mx=e.clientX-rect.left,my=e.clientY-rect.top;
+    var scaleX=canvas.width/rect.width;
+    var cx=mx*scaleX;
+    var hr=(cx-pL)/cW*HRS;
+    if(hr<0||hr>HRS){document.getElementById("tideTooltip").style.display="none";return;}
+    var hIdx=Math.round(hr);
+    // Tide height
+    var tideIdx=Math.min(Math.round(hr*tidePts.length/HRS),tidePts.length-1);
+    var tideH2=tidePts[tideIdx]!=null?tidePts[tideIdx].toFixed(2)+"m":"—";
+    // Wind
+    var windSpd2=winds[Math.min(hIdx,winds.length-1)]||0;
+    var windDir2=wdirs[Math.min(hIdx,wdirs.length-1)];
+    var windStr=Math.round(windSpd2)+" km/h "+(windDir2!=null?d2dir(windDir2):"");
+    // Rain
+    var rainVal=rains[Math.min(hIdx,rains.length-1)];
+    var rainStr=rainVal!=null?Math.round(rainVal)+"%":"—";
+    // Time label
+    var totalH=Math.floor(hr),totalM=Math.round((hr-totalH)*60);
+    if(totalM>=60){totalH++;totalM=0;} if(totalH>=HRS)totalH=HRS-1;
+    var dayIdx=Math.floor(totalH/24);
+    var hourOfDay=totalH%24;
+    var dd2=new Date(now.getFullYear(),now.getMonth(),now.getDate()+dayIdx);
+    var timeLbl=DAYS[dd2.getDay()]+" "+hourOfDay.toString().padStart(2,"0")+":"+totalM.toString().padStart(2,"0");
+    var tt=document.getElementById("tideTooltip");
+    tt.innerHTML='<div style="color:#7ec8e3;font-weight:500;margin-bottom:4px">'+timeLbl+'</div>'+
+      '<div>🌊 Tide: <strong style="color:#4a9adf">'+tideH2+'</strong></div>'+
+      '<div>💨 Wind: <strong style="color:'+(windSpd2<10?"#3dd68c":windSpd2<20?"#f0c830":windSpd2<30?"#f0a030":"#e05050")+'">'+windStr+'</strong></div>'+
+      '<div>🌧 Rain: <strong style="color:#3dd68c">'+rainStr+'</strong></div>';
+    tt.style.display="block";
+    // Position tooltip — flip left if near right edge
+    var tipX=mx+14,tipY=my-10;
+    if(tipX+180>rect.width)tipX=mx-190;
+    tt.style.left=tipX+"px";
+    tt.style.top=tipY+"px";
+  };
+  canvas.onmouseleave=function(){document.getElementById("tideTooltip").style.display="none";};
+}
   var extHtml="";
   for(var d=0;d<Math.min(DN,7);d++){
     var exs=getWTExtremes(d);
@@ -655,6 +696,22 @@ function buildChart(canvasId,temps,winds,rains,windDirs,labels,instRef,dayOffset
     },plugins:[nowPlugin]
   });
   if(instRef)instRef.inst=inst;return inst;
+}
+
+  // Tide extremes legend
+  var extHtml="";
+  for(var d=0;d<Math.min(DN,7);d++){
+    var exs=getWTExtremes(d);
+    if(!exs.length)continue;
+    var dd=new Date(now.getFullYear(),now.getMonth(),now.getDate()+d);
+    extHtml+='<span style="color:#7ec8e3;font-weight:500">'+DAYS[dd.getDay()]+':</span> ';
+    exs.forEach(function(e){
+      var col=e.type==="High"?"#3dd68c":"#f0a030";
+      var h=parseFloat(e.h);
+      extHtml+='<span style="color:'+col+'">'+(e.type==="High"?"▲":"▼")+Math.max(0,h).toFixed(2)+"m@"+e.time+"</span> ";
+    });
+  }
+  document.getElementById("tideExtremes").innerHTML=extHtml;
 }
 
 function showDayFish(dayIndex){
