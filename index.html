@@ -174,7 +174,7 @@ function scoreColor(s){return s>=8?"#3dd68c":s>=6?"#f0c830":s>=4?"#f0a030":"#e05
 
 var curLat=-34.938,curLng=138.502,curName="West Beach, South Australia";
 var hourlyChartInst=null,wxData=null,wtTideData=null,tideDays=1;
-var wtKey=localStorage.getItem("wtKey")||"3d7f110b-e719-4da9-b129-940d9fa3b5f4";
+var wtKey=localStorage.getItem("wtKey")||"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx";
 
 function saveWTKey(){
   var k=document.getElementById("wtKeyInput").value.trim();
@@ -370,8 +370,8 @@ function drawMainChart(wx){
   // Wind arrows
   var winds=wx.hourly.wind_speed_10m.slice(0,HRS);
   var wdirs=wx.hourly.wind_direction_10m?wx.hourly.wind_direction_10m.slice(0,HRS):[];
-  var wMx=Math.ceil(Math.max(Math.max.apply(null,winds),20)/10)*10;
-  var wStep=wMx<=30?5:wMx<=60?10:20;
+  var wMx=Math.ceil(Math.max(Math.max.apply(null,winds),25)/10)*10;
+  var wStep=wMx<=20?5:wMx<=40?10:wMx<=60?10:20;
   function wY(spd){return wT+wH*(1-spd/wMx);}
   for(var spd=wStep;spd<=wMx;spd+=wStep){
     ctx.beginPath();ctx.setLineDash([2,4]);ctx.strokeStyle="rgba(74,120,180,0.18)";
@@ -417,7 +417,8 @@ function drawMainChart(wx){
     extHtml+='<span style="color:#7ec8e3;font-weight:500">'+DAYS[dd.getDay()]+':</span> ';
     exs.forEach(function(e){
       var col=e.type==="High"?"#3dd68c":"#f0a030";
-      extHtml+='<span style="color:'+col+'">'+(e.type==="High"?"▲":"▼")+e.h+"m@"+e.time+"</span> ";
+      var h=parseFloat(e.h);
+      extHtml+='<span style="color:'+col+'">'+(e.type==="High"?"▲":"▼")+Math.max(0,h).toFixed(2)+"m@"+e.time+"</span> ";
     });
   }
   document.getElementById("tideExtremes").innerHTML=extHtml;
@@ -660,12 +661,13 @@ function showDayFish(dayIndex){
   if(!wxData)return;
   var wx=wxData;
   var dateStr=wx.daily.time[dayIndex];
-  var windSpd=wx.daily.wind_speed_10m_max?Math.round(wx.daily.wind_speed_10m_max[dayIndex]):10;
+  // For today use current wind, for future days use daily max
+  var windSpd=dayIndex===0?Math.round(wx.current.wind_speed_10m):wx.daily.wind_speed_10m_max?Math.round(wx.daily.wind_speed_10m_max[dayIndex]):10;
   var si=dayIndex*24;
   var pressures=wx.hourly.surface_pressure?wx.hourly.surface_pressure.slice(si,si+24):[];
   var params=calcFishing(dayIndex,pressures,windSpd);
   document.getElementById("dayFishWrap").style.display="block";
-  document.getElementById("dayFishTitle").textContent="Fishing conditions — "+fmtDate(dateStr);
+  document.getElementById("dayFishTitle").textContent="Fishing conditions — "+fmtDate(dateStr)+(dayIndex===0?" (current wind used)":"");
   document.getElementById("dayFishContent").innerHTML=buildFishingHTML(params,"day"+dayIndex);
   document.getElementById("dayFishWrap").scrollIntoView({behavior:"smooth"});
   document.querySelectorAll(".day").forEach(function(el,i){el.classList.toggle("selected",i===dayIndex);});
