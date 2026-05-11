@@ -163,6 +163,37 @@ function fmtHM(h){var hh=Math.floor(h),mm=Math.round((h-hh)*60);if(mm===60){hh++
 function fmtDate(s){var d=new Date(s);return DAYS[d.getDay()]+" "+d.getDate()+" "+MONTHS[d.getMonth()]+" "+d.getFullYear();}
 function scoreColor(s){return s>=8?"#3dd68c":s>=6?"#f0c830":s>=4?"#f0a030":"#e05050";}
 
+// Interpolate hourly array to 30-min resolution
+function interpTo30min(arr){
+  var out=[];
+  for(var i=0;i<arr.length;i++){
+    out.push(arr[i]);
+    if(i<arr.length-1){
+      // Angular interpolation for directions (0-360 wrap)
+      // We use this for both speed and direction — caller handles direction separately
+      out.push((arr[i]+arr[i+1])/2);
+    }
+  }
+  return out;
+}
+
+// Angular (circular) interpolation for wind direction — handles 350°/10° wrap
+function interpDirTo30min(arr){
+  var out=[];
+  for(var i=0;i<arr.length;i++){
+    out.push(arr[i]);
+    if(i<arr.length-1){
+      var a=arr[i],b=arr[i+1];
+      var diff=b-a;
+      if(diff>180)diff-=360;
+      if(diff<-180)diff+=360;
+      var mid=(a+diff/2+360)%360;
+      out.push(mid);
+    }
+  }
+  return out;
+}
+
 var curLat=-34.938,curLng=138.502,curName="West Beach, South Australia";
 var hourlyChartInst=null,wxData=null,wtTideData=null,tideDays=1;
 var wtKey=localStorage.getItem("wtKey")||"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx";
@@ -353,10 +384,16 @@ function drawMainChart(wx){
   ctx.stroke();
   ctx.fillStyle="#4a9adf";ctx.font="9px system-ui";ctx.fillText("Tide",W-pR+3,pT+8);
 
-  // Wind — dynamic Y axis using actual min/max
-  var winds=wx.hourly.wind_speed_10m.slice(0,HRS);
-  var wdirs=wx.hourly.wind_direction_10m?wx.hourly.wind_direction_10m.slice(0,HRS):[];
-  var wRawMin=Math.min.apply(null,winds),wRawMax=Math.max.apply(null,winds);
+  // Build 30-minute wind arrays by interpolating hourly Open-Meteo data
+  var windsHourly=wx.hourly.wind_speed_10m.slice(0,HRS);
+  var wdirsHourly=wx.hourly.wind_direction_10m?wx.hourly.wind_direction_10m.slice(0,HRS):[];
+  var winds30=interpTo30min(windsHourly);    // speed at 30-min intervals
+  var wdirs30=interpDirTo30min(wdirsHourly); // direction at 30-min intervals
+  // Total 30-min slots for the view = HRS * 2
+  var SLOTS=HRS*2;
+
+  // Wind — dynamic Y axis using actual min/max of hourly data
+  var wRawMin=Math.min.apply(null,windsHourly),wRawMax=Math.max.apply(null,windsHourly);
   var wMin=Math.max(0,Math.floor(wRawMin/5)*5-5);
   var wMx=Math.ceil(Math.max(wRawMax,wMin+10)/10)*10;
   var wRange=wMx-wMin;
@@ -371,12 +408,16 @@ function drawMainChart(wx){
   ctx.fillStyle="#5a8ab0";ctx.font="9px system-ui";ctx.fillText("km/h",W-pR+3,wT+8);
   ctx.fillStyle="#5a8ab0";ctx.font="9px system-ui";ctx.fillText("Wind",2,wT+10);
 
-  // Wind arrows — dense: every hr for 1-day, every hr for 3-day, every 2hr for 5-7 day
-  var arrowStep=tideDays<=3?1:2;
-  for(var h=0;h<HRS;h+=arrowStep){
-    var spd=winds[h]||0,dir=wdirs[h]!=null?wdirs[h]:0;
+  // Wind arrows — 30-min for 1-day and 3-day; 1-hour for 5-day and 7-day
+  // For 30-min: iterate over 30-min slots (step=1 in slot index = 30 min)
+  // For hourly fallback: step=2 in slot index = 60 min
+  var slotStep=tideDays<=3?1:2;
+  for(var s=0;s<SLOTS;s+=slotStep){
+    var spd=winds30[s]!=null?winds30[s]:0;
+    var dir=wdirs30[s]!=null?wdirs30[s]:0;
+    var hrPos=s/2; // position in hours (0.5 increments)
     var cy=Math.max(wT+6,Math.min(wT+wH-6,wY(spd)));
-    var x=xF(h+0.5);
+    var x=xF(hrPos+0.25); // centre arrow in its 30-min slot
     var aLen=6+Math.min((spd-wMin)/(wMx-wMin),1)*10;
     var col=spd<10?"#3dd68c":spd<20?"#f0c830":spd<30?"#f0a030":"#e05050";
     var ang=(dir+180)*Math.PI/180,dx=Math.sin(ang),dy=-Math.cos(ang);
@@ -416,17 +457,18 @@ function drawMainChart(wx){
   }
   document.getElementById("tideExtremes").innerHTML=extHtml;
 
-  // Hover tooltip
+  // Hover tooltip — uses 30-min interpolated data
   canvas.onmousemove=function(e){
     var rect=canvas.getBoundingClientRect();
     var scaleX=canvas.width/rect.width;
     var cx=(e.clientX-rect.left)*scaleX;
     var hr=(cx-pL)/cW*HRS;
     if(hr<0||hr>HRS){document.getElementById("tideTooltip").style.display="none";return;}
-    var hIdx=Math.min(Math.round(hr),HRS-1);
+    var slotIdx=Math.min(Math.round(hr*2),SLOTS-1); // nearest 30-min slot
+    var hIdx=Math.min(Math.round(hr),HRS-1);         // nearest hourly index for rain
     var tideIdx=Math.min(Math.round(hr*tidePts.length/HRS),tidePts.length-1);
     var tideH2=tidePts[tideIdx]!=null?Math.max(0,tidePts[tideIdx]).toFixed(2)+"m":"—";
-    var ws=winds[hIdx]||0,wd=wdirs[hIdx];
+    var ws=winds30[slotIdx]||0,wd=wdirs30[slotIdx];
     var windStr=Math.round(ws)+" km/h "+(wd!=null?d2dir(wd):"");
     var rainVal=rains[hIdx];
     var rainStr=rainVal!=null?Math.round(rainVal)+"%":"—";
@@ -499,7 +541,7 @@ function getTideState(dayOffset){
   var rising=next>prev,nearHigh=cur>1.5,nearLow=cur<0.3;
   var rH=0,fH=0;for(var i=1;i<Math.min(49,pts.length-1);i++){if(pts[i]>pts[i-1])rH++;else fH++;}
   var label,score;
-  if(nearHigh){label="Near high — slack";score=5;}else if(nearLow){label="Near low — slack";score=5;}else if(rising){label="Incoming ("+rH+"h rising)";score=10;}else{label="Outgoing ("+fH+"h falling)";score=8;}
+  if(nearHigh){label="Near high — slack";score=5;}else if(nearLow){label="Near low — slack";score=5;}else if(rising){label="Incoming ("+rH+"h rising)";score:10;}else{label="Outgoing ("+fH+"h falling)";score=8;}
   return{label:label,score:score,height:Math.max(0,cur).toFixed(2)};
 }
 
