@@ -196,7 +196,7 @@ function interpDirTo30min(arr){
 
 var curLat=-34.938,curLng=138.502,curName="West Beach, South Australia";
 var hourlyChartInst=null,wxData=null,wtTideData=null,tideDays=1;
-var wtKey=localStorage.getItem("wtKey")||"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx";
+var wtKey=localStorage.getItem("wtKey")||"";
 
 function saveWTKey(){
   var k=document.getElementById("wtKeyInput").value.trim();
@@ -207,7 +207,7 @@ function saveWTKey(){
 }
 
 async function fetchWorldTides(lat,lng){
-  if(!wtKey||wtKey.indexOf("xxxx")>-1)return null;
+  if(!wtKey)return null;
   try{
     var now=new Date(),tz=9.5*60*60000;
     var adn=new Date(now.getTime()+tz-(now.getTimezoneOffset()*60000));
@@ -753,7 +753,7 @@ async function doLoad(){
   }catch(e){document.getElementById("locLine").textContent="Geocoding error: "+e.message;}
   document.getElementById("locLine").textContent=found?"📍 "+curName+" ("+curLat.toFixed(3)+"°, "+curLng.toFixed(3)+"°)":"Location not found — using previous ("+curName+")";
   buildRadar(curLat,curLng);
-  if(wtKey&&wtKey.indexOf("xxxx")===-1){
+  if(wtKey){
     document.getElementById("wtKeyStatus").textContent="Fetching tides…";
     wtTideData=await fetchWorldTides(curLat,curLng);
     document.getElementById("wtKeyStatus").textContent=wtTideData?"✓ Real tide data":"⚠ Tide API failed";
@@ -822,7 +822,7 @@ async function doLoad(){
 }
 
 doLoad();
-if(wtKey&&wtKey.indexOf("xxxx")===-1)document.getElementById("wtKeyInput").value=wtKey;
+if(wtKey)document.getElementById("wtKeyInput").value=wtKey;
 </script>
 </body>
 </html>
