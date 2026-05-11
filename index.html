@@ -13,7 +13,6 @@ h1{font-size:18px;font-weight:500;color:#7ec8e3;margin-bottom:12px}
 input{flex:1;min-width:180px;background:#0d1f3c;border:1px solid #2a4a7a;border-radius:8px;padding:7px 12px;color:#c8d8f0;font-size:13px;outline:none}
 button{background:#1a3a6c;border:1px solid #2a4a7a;border-radius:8px;padding:7px 14px;color:#7ec8e3;cursor:pointer;font-size:13px}
 button:hover{background:#1f4a8a}
-button.active{background:#2a5a9a;border-color:#4a9adf;color:#fff}
 .loc{font-size:12px;color:#5a8ab0;margin-bottom:8px}
 .badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
 .badge{font-size:11px;padding:3px 9px;border-radius:12px;font-weight:500}
@@ -80,23 +79,19 @@ button.active{background:#2a5a9a;border-color:#4a9adf;color:#fff}
 </style>
 </head>
 <body>
-
 <h1>🎣 Fisherman's Dashboard</h1>
-
 <div class="wt-key-bar">
   <span style="font-size:11px;color:#5a8ab0;white-space:nowrap">🔑 WorldTides key:</span>
   <input id="wtKeyInput" type="password" placeholder="Paste key from worldtides.info/developer" style="flex:1;min-width:180px;font-size:12px;padding:5px 10px">
   <button onclick="saveWTKey()" style="font-size:12px;padding:5px 12px">Save</button>
   <span id="wtKeyStatus" style="font-size:11px;color:#5a8ab0"></span>
 </div>
-
 <div class="row">
   <input id="locInput" type="text" value="West Beach, South Australia" placeholder="Suburb or town…">
   <button onclick="doLoad()">↻ Load</button>
 </div>
 <div class="loc" id="locLine">Loading…</div>
 <div class="badges" id="badges"></div>
-
 <div class="grid" id="metricGrid">
   <div class="card"><div class="card-title">Condition</div><div class="card-val" id="cond">—</div><div class="card-sub">Current</div></div>
   <div class="card"><div class="card-title">Temperature</div><div class="card-val" id="temp">—</div><div class="card-sub" id="tempSub">—</div></div>
@@ -105,12 +100,10 @@ button.active{background:#2a5a9a;border-color:#4a9adf;color:#fff}
   <div class="card"><div class="card-title">Precipitation</div><div class="card-val" id="precip">—</div><div class="card-sub">Last hour</div></div>
   <div class="card"><div class="card-title">Visibility / UV</div><div class="card-val" id="vis">—</div><div class="card-sub" id="uvSub">—</div></div>
 </div>
-
 <div class="section">
   <div class="sec-title">Fishing conditions — now</div>
   <div id="fishingContent"><span style="color:#3a5a7a">Loading…</span></div>
 </div>
-
 <div class="section">
   <div class="sec-title" id="tideSectionTitle">Tide, wind and rain forecast</div>
   <div class="day-btn-row">
@@ -119,7 +112,10 @@ button.active{background:#2a5a9a;border-color:#4a9adf;color:#fff}
     <button class="day-btn" onclick="setTideDays(5,this)">5 Days</button>
     <button class="day-btn" onclick="setTideDays(7,this)">7 Days</button>
   </div>
-  <canvas id="fiveDayCanvas" style="width:100%;display:block"></canvas>
+  <div style="position:relative">
+    <canvas id="fiveDayCanvas" style="width:100%;display:block"></canvas>
+    <div id="tideTooltip" style="display:none;position:absolute;background:rgba(10,22,40,0.95);border:1px solid #2a4a7a;border-radius:8px;padding:8px 12px;font-size:12px;color:#c8d8f0;pointer-events:none;z-index:10;white-space:nowrap"></div>
+  </div>
   <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:#5a8ab0;margin-top:6px">
     <span><span style="display:inline-block;width:14px;height:3px;background:#4a9adf;vertical-align:middle;margin-right:4px;border-radius:2px"></span>Tide (m, right)</span>
     <span><span style="display:inline-block;width:14px;height:8px;background:rgba(61,214,140,0.25);vertical-align:middle;margin-right:4px;border-radius:2px"></span>Rain prob % (left)</span>
@@ -130,7 +126,6 @@ button.active{background:#2a5a9a;border-color:#4a9adf;color:#fff}
   </div>
   <div id="tideExtremes" style="font-size:11px;color:#5a8ab0;margin-top:6px;flex-wrap:wrap;display:flex;gap:10px"></div>
 </div>
-
 <div class="section">
   <div class="sec-title">24-hour temperature, wind and rain — today</div>
   <div class="chart-wrap"><canvas id="hourlyChart"></canvas></div>
@@ -140,24 +135,20 @@ button.active{background:#2a5a9a;border-color:#4a9adf;color:#fff}
     <span><span style="display:inline-block;width:18px;border-top:2px dotted #3dd68c;vertical-align:middle;margin-right:4px"></span>Rain prob %</span>
   </div>
 </div>
-
 <div class="section">
   <div class="sec-title">Ocean conditions</div>
   <div class="swell-row" id="swellRow"><span style="color:#3a5a7a">Loading…</span></div>
 </div>
-
 <div class="section">
   <div class="sec-title">7-day outlook — click any day for fishing conditions</div>
   <div class="forecast" id="forecastRow"><span style="color:#3a5a7a">Loading…</span></div>
 </div>
-
 <div id="dayFishWrap" style="display:none">
   <div class="day-fish-panel">
     <div class="day-fish-title" id="dayFishTitle">—</div>
     <div id="dayFishContent"></div>
   </div>
 </div>
-
 <div class="sec-title" style="margin-bottom:8px">Radar and live maps</div>
 <div class="radar-grid" id="radarGrid"></div>
 
@@ -184,12 +175,10 @@ function saveWTKey(){
   if(k)doLoad();
 }
 
-// ── WorldTides ────────────────────────────────────────────────────────────────
 async function fetchWorldTides(lat,lng){
-  if(!wtKey)return null;
+  if(!wtKey||wtKey.indexOf("xxxx")>-1)return null;
   try{
-    var now=new Date();
-    var tz=9.5*60*60000;
+    var now=new Date(),tz=9.5*60*60000;
     var adn=new Date(now.getTime()+tz-(now.getTimezoneOffset()*60000));
     var yest=new Date(adn);yest.setDate(yest.getDate()-1);
     var ds=yest.getFullYear()+"-"+(yest.getMonth()+1).toString().padStart(2,"0")+"-"+yest.getDate().toString().padStart(2,"0");
@@ -227,8 +216,7 @@ function getWTExtremes(dayOffset){
 }
 
 function getTidePts(dayOffset){
-  var pts=getWTHeightsForDay(dayOffset);
-  return pts||harmonicTide(dayOffset);
+  return getWTHeightsForDay(dayOffset)||harmonicTide(dayOffset);
 }
 
 function harmonicTide(dayOffset){
@@ -245,7 +233,6 @@ function harmonicTide(dayOffset){
   return pts;
 }
 
-// ── Sun times ─────────────────────────────────────────────────────────────────
 function getSunTimes(date,lat,lng){
   var rad=Math.PI/180,JD=Math.floor(date.getTime()/86400000)+2440588,n=JD-2451545.0;
   var L=(280.46+0.9856474*n)%360,g=(357.528+0.9856003*n)%360;
@@ -260,7 +247,6 @@ function getSunTimes(date,lat,lng){
   return{firstLight:((12-HC/15-lc)+tz+24)%24,sunrise:((12-H/15-lc)+tz+24)%24,sunset:((12+H/15-lc)+tz+24)%24,lastLight:((12+HC/15-lc)+tz+24)%24};
 }
 
-// ── Main tide+wind+rain canvas ────────────────────────────────────────────────
 function setTideDays(n,btn){
   tideDays=n;
   document.querySelectorAll(".day-btn").forEach(function(b){b.classList.remove("active");});
@@ -270,7 +256,7 @@ function setTideDays(n,btn){
 
 function drawMainChart(wx){
   var canvas=document.getElementById("fiveDayCanvas");
-  if(!canvas)return;
+  if(!canvas||!wx)return;
   var DN=tideDays,HRS=DN*24;
   var W=canvas.parentElement.clientWidth||700,H=tideDays===1?220:300;
   canvas.width=W;canvas.height=H;
@@ -329,7 +315,7 @@ function drawMainChart(wx){
   var tidePts=[];
   for(var d=0;d<DN;d++)tidePts=tidePts.concat(getTidePts(d).slice(0,49));
   var tMx=Math.max.apply(null,tidePts)*1.08;
-  function tY(v){return tT+tH*(1-v/tMx);}
+  function tY(v){return tT+tH*(1-Math.max(0,v)/tMx);}
   function tX(i){return xF(i*HRS/tidePts.length);}
 
   // Rain overlaid on tide zone
@@ -367,13 +353,16 @@ function drawMainChart(wx){
   ctx.stroke();
   ctx.fillStyle="#4a9adf";ctx.font="9px system-ui";ctx.fillText("Tide",W-pR+3,pT+8);
 
-  // Wind arrows
+  // Wind — dynamic Y axis using actual min/max
   var winds=wx.hourly.wind_speed_10m.slice(0,HRS);
   var wdirs=wx.hourly.wind_direction_10m?wx.hourly.wind_direction_10m.slice(0,HRS):[];
-  var wMin=Math.max(0,Math.floor(Math.min.apply(null,winds)/5)*5-5);
-  var wMx=Math.ceil(Math.max(Math.max.apply(null,winds),wMin+10)/10)*10;
-  var wStep=wMx-wMin<=20?5:wMx-wMin<=40?10:20;
+  var wRawMin=Math.min.apply(null,winds),wRawMax=Math.max.apply(null,winds);
+  var wMin=Math.max(0,Math.floor(wRawMin/5)*5-5);
+  var wMx=Math.ceil(Math.max(wRawMax,wMin+10)/10)*10;
+  var wRange=wMx-wMin;
+  var wStep=wRange<=20?5:wRange<=40?10:20;
   function wY(spd){return wT+wH*(1-(spd-wMin)/(wMx-wMin));}
+  // Wind grid lines
   for(var spd=wMin+wStep;spd<=wMx;spd+=wStep){
     ctx.beginPath();ctx.setLineDash([2,4]);ctx.strokeStyle="rgba(74,120,180,0.18)";
     ctx.moveTo(pL,wY(spd));ctx.lineTo(W-pR,wY(spd));ctx.stroke();ctx.setLineDash([]);
@@ -381,12 +370,14 @@ function drawMainChart(wx){
   }
   ctx.fillStyle="#5a8ab0";ctx.font="9px system-ui";ctx.fillText("km/h",W-pR+3,wT+8);
   ctx.fillStyle="#5a8ab0";ctx.font="9px system-ui";ctx.fillText("Wind",2,wT+10);
-  // Wind arrows — as dense as readable (every 1hr for 1day, every 1.5hr for 3day, every 2hr for 5-7day)
-  var arrowStep=tideDays<=1?1:tideDays<=3?1:2;
+
+  // Wind arrows — dense: every hr for 1-day, every hr for 3-day, every 2hr for 5-7 day
+  var arrowStep=tideDays<=3?1:2;
   for(var h=0;h<HRS;h+=arrowStep){
     var spd=winds[h]||0,dir=wdirs[h]!=null?wdirs[h]:0;
     var cy=Math.max(wT+6,Math.min(wT+wH-6,wY(spd)));
-    var x=xF(h+0.5),aLen=6+Math.min(spd/wMx,1)*10;
+    var x=xF(h+0.5);
+    var aLen=6+Math.min((spd-wMin)/(wMx-wMin),1)*10;
     var col=spd<10?"#3dd68c":spd<20?"#f0c830":spd<30?"#f0a030":"#e05050";
     var ang=(dir+180)*Math.PI/180,dx=Math.sin(ang),dy=-Math.cos(ang);
     var x1=x-dx*aLen/2,y1=cy-dy*aLen/2,x2=x+dx*aLen/2,y2=cy+dy*aLen/2;
@@ -404,52 +395,13 @@ function drawMainChart(wx){
 
   // Hour ticks
   ctx.fillStyle="#3a6090";ctx.font="9px system-ui";
-  var tickStep=tideDays>=5?6:tideDays>=3?3:3;
+  var tickStep=tideDays>=5?6:3;
   for(var h=tickStep;h<HRS;h+=tickStep){
     if(h%24===0)continue;
     ctx.fillText((h%24).toString().padStart(2,"0")+":00",xF(h)-8,pT+cH+12);
   }
 
-  // Hover tooltip
-  canvas.onmousemove=function(e){
-    var rect=canvas.getBoundingClientRect();
-    var mx=e.clientX-rect.left,my=e.clientY-rect.top;
-    var scaleX=canvas.width/rect.width;
-    var cx=mx*scaleX;
-    var hr=(cx-pL)/cW*HRS;
-    if(hr<0||hr>HRS){document.getElementById("tideTooltip").style.display="none";return;}
-    var hIdx=Math.round(hr);
-    // Tide height
-    var tideIdx=Math.min(Math.round(hr*tidePts.length/HRS),tidePts.length-1);
-    var tideH2=tidePts[tideIdx]!=null?tidePts[tideIdx].toFixed(2)+"m":"—";
-    // Wind
-    var windSpd2=winds[Math.min(hIdx,winds.length-1)]||0;
-    var windDir2=wdirs[Math.min(hIdx,wdirs.length-1)];
-    var windStr=Math.round(windSpd2)+" km/h "+(windDir2!=null?d2dir(windDir2):"");
-    // Rain
-    var rainVal=rains[Math.min(hIdx,rains.length-1)];
-    var rainStr=rainVal!=null?Math.round(rainVal)+"%":"—";
-    // Time label
-    var totalH=Math.floor(hr),totalM=Math.round((hr-totalH)*60);
-    if(totalM>=60){totalH++;totalM=0;} if(totalH>=HRS)totalH=HRS-1;
-    var dayIdx=Math.floor(totalH/24);
-    var hourOfDay=totalH%24;
-    var dd2=new Date(now.getFullYear(),now.getMonth(),now.getDate()+dayIdx);
-    var timeLbl=DAYS[dd2.getDay()]+" "+hourOfDay.toString().padStart(2,"0")+":"+totalM.toString().padStart(2,"0");
-    var tt=document.getElementById("tideTooltip");
-    tt.innerHTML='<div style="color:#7ec8e3;font-weight:500;margin-bottom:4px">'+timeLbl+'</div>'+
-      '<div>🌊 Tide: <strong style="color:#4a9adf">'+tideH2+'</strong></div>'+
-      '<div>💨 Wind: <strong style="color:'+(windSpd2<10?"#3dd68c":windSpd2<20?"#f0c830":windSpd2<30?"#f0a030":"#e05050")+'">'+windStr+'</strong></div>'+
-      '<div>🌧 Rain: <strong style="color:#3dd68c">'+rainStr+'</strong></div>';
-    tt.style.display="block";
-    // Position tooltip — flip left if near right edge
-    var tipX=mx+14,tipY=my-10;
-    if(tipX+180>rect.width)tipX=mx-190;
-    tt.style.left=tipX+"px";
-    tt.style.top=tipY+"px";
-  };
-  canvas.onmouseleave=function(){document.getElementById("tideTooltip").style.display="none";};
-}
+  // Tide extremes legend
   var extHtml="";
   for(var d=0;d<Math.min(DN,7);d++){
     var exs=getWTExtremes(d);
@@ -458,14 +410,45 @@ function drawMainChart(wx){
     extHtml+='<span style="color:#7ec8e3;font-weight:500">'+DAYS[dd.getDay()]+':</span> ';
     exs.forEach(function(e){
       var col=e.type==="High"?"#3dd68c":"#f0a030";
-      var h=parseFloat(e.h);
-      extHtml+='<span style="color:'+col+'">'+(e.type==="High"?"▲":"▼")+Math.max(0,h).toFixed(2)+"m@"+e.time+"</span> ";
+      var hv=Math.max(0,parseFloat(e.h));
+      extHtml+='<span style="color:'+col+'">'+(e.type==="High"?"▲":"▼")+hv.toFixed(2)+"m@"+e.time+"</span> ";
     });
   }
   document.getElementById("tideExtremes").innerHTML=extHtml;
+
+  // Hover tooltip
+  canvas.onmousemove=function(e){
+    var rect=canvas.getBoundingClientRect();
+    var scaleX=canvas.width/rect.width;
+    var cx=(e.clientX-rect.left)*scaleX;
+    var hr=(cx-pL)/cW*HRS;
+    if(hr<0||hr>HRS){document.getElementById("tideTooltip").style.display="none";return;}
+    var hIdx=Math.min(Math.round(hr),HRS-1);
+    var tideIdx=Math.min(Math.round(hr*tidePts.length/HRS),tidePts.length-1);
+    var tideH2=tidePts[tideIdx]!=null?Math.max(0,tidePts[tideIdx]).toFixed(2)+"m":"—";
+    var ws=winds[hIdx]||0,wd=wdirs[hIdx];
+    var windStr=Math.round(ws)+" km/h "+(wd!=null?d2dir(wd):"");
+    var rainVal=rains[hIdx];
+    var rainStr=rainVal!=null?Math.round(rainVal)+"%":"—";
+    var totalH=Math.floor(hr),totalM=Math.round((hr-totalH)*60);
+    if(totalM>=60){totalH++;totalM=0;}
+    var dayIdx=Math.floor(totalH/24),hourOfDay=totalH%24;
+    var dd2=new Date(now.getFullYear(),now.getMonth(),now.getDate()+dayIdx);
+    var timeLbl=DAYS[dd2.getDay()]+" "+hourOfDay.toString().padStart(2,"0")+":"+totalM.toString().padStart(2,"0");
+    var windCol=ws<10?"#3dd68c":ws<20?"#f0c830":ws<30?"#f0a030":"#e05050";
+    var tt=document.getElementById("tideTooltip");
+    tt.innerHTML='<div style="color:#7ec8e3;font-weight:500;margin-bottom:4px">'+timeLbl+'</div>'+
+      '<div>🌊 Tide: <strong style="color:#4a9adf">'+tideH2+'</strong></div>'+
+      '<div>💨 Wind: <strong style="color:'+windCol+'">'+windStr+'</strong></div>'+
+      '<div>🌧 Rain: <strong style="color:#3dd68c">'+rainStr+'</strong></div>';
+    tt.style.display="block";
+    var tipX=e.clientX-rect.left+14,tipY=e.clientY-rect.top-10;
+    if(tipX+180>rect.width)tipX=e.clientX-rect.left-190;
+    tt.style.left=tipX+"px";tt.style.top=tipY+"px";
+  };
+  canvas.onmouseleave=function(){document.getElementById("tideTooltip").style.display="none";};
 }
 
-// ── Moon / Solunar ────────────────────────────────────────────────────────────
 function getMoonPhase(date){
   var days=(date-new Date(2000,0,6,18,14,0))/86400000;
   var phase=((days%29.53058867)+29.53058867)%29.53058867;
@@ -511,19 +494,13 @@ function getPressureTrend(pressures,startHour){
 
 function getTideState(dayOffset){
   var pts=getTidePts(dayOffset);
-  var ni;
-  if(dayOffset===0){
-    var now=new Date();
-    ni=Math.round(Math.round((now.getHours()*60+now.getMinutes())/30)*(pts.length-1)/48);
-  } else {
-    ni=Math.round(24*(pts.length-1)/48);
-  }
+  var ni=dayOffset===0?Math.round(Math.round((new Date().getHours()*60+new Date().getMinutes())/30)*(pts.length-1)/48):Math.round(24*(pts.length-1)/48);
   var cur=pts[ni],prev=pts[Math.max(0,ni-2)],next=pts[Math.min(pts.length-1,ni+2)];
   var rising=next>prev,nearHigh=cur>1.5,nearLow=cur<0.3;
   var rH=0,fH=0;for(var i=1;i<Math.min(49,pts.length-1);i++){if(pts[i]>pts[i-1])rH++;else fH++;}
   var label,score;
   if(nearHigh){label="Near high — slack";score=5;}else if(nearLow){label="Near low — slack";score=5;}else if(rising){label="Incoming ("+rH+"h rising)";score=10;}else{label="Outgoing ("+fH+"h falling)";score=8;}
-  return{label:label,score:score,height:cur.toFixed(2)};
+  return{label:label,score:score,height:Math.max(0,cur).toFixed(2)};
 }
 
 function getTimeScore(){
@@ -574,47 +551,6 @@ function getBestTimes(dayOffset,pressures,moonScore,windSpd){
 
 var WEIGHTS={tide:30,moon:20,pressure:20,time:15,wind:15};
 
-function buildFishingHTML(params,panelId){
-  var score=params.score,tide=params.tide,moon=params.moon,pressure=params.pressure,wind=params.wind,tod=params.tod,sol=params.sol,bestTimes=params.bestTimes,summary=params.summary;
-  var col=scoreColor(score);
-  var iid="infoPanel_"+panelId,bid="infoBtn_"+panelId;
-
-  // Factor rows with % weighting and contribution
-  var factors=[
-    {name:"Tide",weight:WEIGHTS.tide,val:tide.label,score:tide.score},
-    {name:"Moon phase",weight:WEIGHTS.moon,val:moon.icon+" "+moon.name,score:moon.score},
-    {name:"Pressure",weight:WEIGHTS.pressure,val:pressure.arrow+" "+pressure.label+" "+pressure.hpa+" hPa",score:pressure.score},
-  ];
-  if(tod)factors.push({name:"Time of day",weight:WEIGHTS.time,val:tod.label,score:tod.score});
-  factors.push({name:"Wind",weight:WEIGHTS.wind,val:wind.label,score:wind.score});
-
-  var factorHtml=factors.map(function(f){
-    var fc=scoreColor(f.score);
-    var contrib=(f.score*f.weight/100).toFixed(1);
-    return'<div class="factor">'+
-      '<div class="factor-header"><span class="factor-name">'+f.name+'</span><span class="factor-weight">weight: '+f.weight+'%</span></div>'+
-      '<div class="factor-val" style="color:'+fc+'">'+f.val+'</div>'+
-      '<div class="factor-contrib">Score '+f.score+'/10 × '+f.weight+'% = <strong style="color:'+fc+'">'+contrib+' pts</strong></div>'+
-      '<div class="factor-bar"><div class="factor-fill" style="width:'+Math.round(f.score*10)+'%;background:'+fc+'"></div></div>'+
-      '</div>';
-  }).join("");
-
-  var solHtml=sol.periods.map(function(p){return'<span class="sol-item '+(p.type==="major"?"sol-major":"sol-minor")+'">'+(p.type==="major"?"★ Major ":"◆ Minor ")+p.time+"</span>";}).join("");
-  var activeHtml=sol.active?'<span style="color:#f0c830;font-weight:500"> — active now ('+sol.active.type+")</span>":"";
-
-  return'<div class="score-wrap">'+
-    '<div class="score-circle" style="border-color:'+col+';background:rgba(0,0,0,0.2)">'+
-    '<div class="score-num" style="color:'+col+'">'+score+'</div>'+
-    '<div class="score-lbl">out of 10</div></div>'+
-    '<div style="flex:1"><div class="factor-grid">'+factorHtml+'</div></div></div>'+
-    '<div class="sec-title" style="margin-top:6px">Solunar periods</div>'+
-    '<div class="sol-row">'+solHtml+activeHtml+'</div>'+
-    '<div class="best-times">Best fishing windows: <span>'+bestTimes.join('</span>, <span>')+'</span></div>'+
-    '<div class="summary-box">'+summary+'</div>'+
-    '<button id="'+bid+'" class="info-toggle" onclick="toggleInfo(\''+iid+'\',\''+bid+'\')">ℹ Why do these factors matter?</button>'+
-    '<div class="info-panel" id="'+iid+'">'+INFO_HTML+'</div>';
-}
-
 function calcFishing(dayOffset,pressures,windSpd){
   var date=dayOffset===0?new Date():new Date(new Date().getFullYear(),new Date().getMonth(),new Date().getDate()+dayOffset);
   var moon=getMoonPhase(date);
@@ -627,8 +563,8 @@ function calcFishing(dayOffset,pressures,windSpd){
   var score=Math.round(tide.score*WEIGHTS.tide/100+moon.score*WEIGHTS.moon/100+pressure.score*WEIGHTS.pressure/100+todScore*WEIGHTS.time/100+wind.score*WEIGHTS.wind/100);
   var bestTimes=getBestTimes(dayOffset,pressures,moon.score,windSpd);
   var parts=[];
-  if(tide.score>=9)parts.push("tide is actively running — best feeding window");
-  else if(tide.score>=7)parts.push("tide is outgoing — fish at drop-offs");
+  if(tide.score>=9)parts.push("tide actively running — best feeding window");
+  else if(tide.score>=7)parts.push("tide outgoing — fish at drop-offs");
   else parts.push("tide near slack — fish less active");
   if(moon.score>=9)parts.push("moon ("+moon.name.toLowerCase()+") giving strong spring tides");
   else if(moon.score>=7)parts.push("moon ("+moon.name.toLowerCase()+") moderately favourable");
@@ -639,20 +575,52 @@ function calcFishing(dayOffset,pressures,windSpd){
   if(wind.score>=8)parts.push("wind light — ideal");
   else if(wind.score>=5)parts.push("wind manageable");
   else parts.push("wind strong — poor conditions");
-  if(tod){if(tod.score>=9)parts.push("prime feeding window ("+tod.label+")");}
+  if(tod&&tod.score>=9)parts.push("prime feeding window ("+tod.label+")");
   var verdict=score>=8?"Excellent. ":score>=6?"Good. ":score>=4?"Fair. ":"Poor. ";
-  var summary=verdict+parts.join("; ")+".";
-  return{score:score,tide:tide,moon:moon,pressure:pressure,wind:wind,tod:tod,sol:sol,bestTimes:bestTimes,summary:summary};
+  return{score:score,tide:tide,moon:moon,pressure:pressure,wind:wind,tod:tod,sol:sol,bestTimes:bestTimes,summary:verdict+parts.join("; ")+"."};
 }
 
 var INFO_HTML='<div class="info-grid">'+
-  '<div class="info-item"><div class="info-title">🌊 Tide (30%)</div><div class="info-body">Fish feed most actively when water is moving. Incoming tide pushes baitfish onto flats — predators follow. Outgoing concentrates fish at channel exits. Slack water = poor feeding. The 2 hours either side of tide change is the prime window. For KGW on Yorke Peninsula this is the single most important factor.</div></div>'+
-  '<div class="info-item"><div class="info-title">🌕 Moon phase (20%)</div><div class="info-body">Moon drives tidal forces. Full and new moon create spring tides — largest range, strongest current, most feeding activity. First and last quarter produce weaker neap tides. The 3 days around full/new moon consistently produce best SA catches. Full moon nights excellent for snapper and squid.</div></div>'+
+  '<div class="info-item"><div class="info-title">🌊 Tide (30%)</div><div class="info-body">Fish feed most actively when water is moving. Incoming tide pushes baitfish onto flats — predators follow. Outgoing concentrates fish at channel exits. Slack water = poor feeding. 2 hours either side of tide change is the prime window. For KGW on Yorke Peninsula this is the single most important factor.</div></div>'+
+  '<div class="info-item"><div class="info-title">🌕 Moon phase (20%)</div><div class="info-body">Moon drives tidal forces. Full and new moon create spring tides — largest range, strongest current, most feeding activity. First and last quarter produce weaker neap tides. 3 days around full/new moon consistently produce best SA catches. Full moon nights excellent for snapper and squid.</div></div>'+
   '<div class="info-item"><div class="info-title">📉 Pressure (20%)</div><div class="info-body">Rising pressure after a low = best — fish feed aggressively. Steady = good. Rapidly falling = brief frantic feeding then fish go deep. Low sitting still = poor. After cold front and rapid rise, fishing poor for 12-24hrs before improving.</div></div>'+
   '<div class="info-item"><div class="info-title">🌅 Time of day (15%)</div><div class="info-body">Dawn (30 min before to 90 min after sunrise) most productive — low light, cool water, active baitfish. Dusk second best. Overnight excellent for snapper and squid. Midday generally poorest in summer.</div></div>'+
-  '<div class="info-item"><div class="info-title">💨 Wind (15%)</div><div class="info-body">Under 15 km/h ideal — calm surface, easy presentation. Light onshore can push baitfish in. Over 25 km/h fish move deep, presentation harder. Over 35 km/h most inshore fishing poor and boat safety the priority.</div></div>'+
-  '<div class="info-item"><div class="info-title">⭐ Solunar periods</div><div class="info-body">Based on moon position. Major periods (moon overhead/underfoot) ~2hrs — strongest feeding. Minor periods ~1hr moderate. Best fishing when solunar major coincides with dawn/dusk AND moving tide — rare but exceptional. Widely used by SA anglers.</div></div>'+
+  '<div class="info-item"><div class="info-title">💨 Wind (15%)</div><div class="info-body">Under 15 km/h ideal — calm surface, easy presentation. Light onshore can push baitfish in. Over 25 km/h fish move deep. Over 35 km/h most inshore fishing poor and boat safety the priority.</div></div>'+
+  '<div class="info-item"><div class="info-title">⭐ Solunar periods</div><div class="info-body">Based on moon position. Major periods (moon overhead/underfoot) ~2hrs — strongest feeding. Minor periods ~1hr moderate. Best fishing when solunar major coincides with dawn/dusk AND moving tide. Widely used by SA anglers.</div></div>'+
   '</div>';
+
+function buildFishingHTML(params,panelId){
+  var score=params.score,tide=params.tide,moon=params.moon,pressure=params.pressure,wind=params.wind,tod=params.tod,sol=params.sol,bestTimes=params.bestTimes,summary=params.summary;
+  var col=scoreColor(score),iid="infoPanel_"+panelId,bid="infoBtn_"+panelId;
+  var factors=[
+    {name:"Tide",weight:WEIGHTS.tide,val:tide.label,score:tide.score},
+    {name:"Moon phase",weight:WEIGHTS.moon,val:moon.icon+" "+moon.name,score:moon.score},
+    {name:"Pressure",weight:WEIGHTS.pressure,val:pressure.arrow+" "+pressure.label+" "+pressure.hpa+" hPa",score:pressure.score},
+  ];
+  if(tod)factors.push({name:"Time of day",weight:WEIGHTS.time,val:tod.label,score:tod.score});
+  else factors.push({name:"Time of day",weight:WEIGHTS.time,val:"(using avg for future day)",score:7});
+  factors.push({name:"Wind",weight:WEIGHTS.wind,val:wind.label,score:wind.score});
+  var factorHtml=factors.map(function(f){
+    var fc=scoreColor(f.score),contrib=(f.score*f.weight/100).toFixed(1);
+    return'<div class="factor">'+
+      '<div class="factor-header"><span class="factor-name">'+f.name+'</span><span class="factor-weight">weight: '+f.weight+'%</span></div>'+
+      '<div class="factor-val" style="color:'+fc+'">'+f.val+'</div>'+
+      '<div class="factor-contrib">Score '+f.score+'/10 × '+f.weight+'% = <strong style="color:'+fc+'">'+contrib+' pts</strong></div>'+
+      '<div class="factor-bar"><div class="factor-fill" style="width:'+Math.round(f.score*10)+'%;background:'+fc+'"></div></div>'+
+      '</div>';
+  }).join("");
+  var solHtml=sol.periods.map(function(p){return'<span class="sol-item '+(p.type==="major"?"sol-major":"sol-minor")+'">'+(p.type==="major"?"★ Major ":"◆ Minor ")+p.time+"</span>";}).join("");
+  var activeHtml=sol.active?'<span style="color:#f0c830;font-weight:500"> — active now ('+sol.active.type+")</span>":"";
+  return'<div class="score-wrap">'+
+    '<div class="score-circle" style="border-color:'+col+';background:rgba(0,0,0,0.2)"><div class="score-num" style="color:'+col+'">'+score+'</div><div class="score-lbl">out of 10</div></div>'+
+    '<div style="flex:1"><div class="factor-grid">'+factorHtml+'</div></div></div>'+
+    '<div class="sec-title" style="margin-top:6px">Solunar periods</div>'+
+    '<div class="sol-row">'+solHtml+activeHtml+'</div>'+
+    '<div class="best-times">Best fishing windows: <span>'+bestTimes.join('</span>, <span>')+'</span></div>'+
+    '<div class="summary-box">'+summary+'</div>'+
+    '<button id="'+bid+'" class="info-toggle" onclick="toggleInfo(\''+iid+'\',\''+bid+'\')">ℹ Why do these factors matter?</button>'+
+    '<div class="info-panel" id="'+iid+'">'+INFO_HTML+'</div>';
+}
 
 function toggleInfo(iid,bid){
   var panel=document.getElementById(iid),btn=document.getElementById(bid);
@@ -698,33 +666,15 @@ function buildChart(canvasId,temps,winds,rains,windDirs,labels,instRef,dayOffset
   if(instRef)instRef.inst=inst;return inst;
 }
 
-  // Tide extremes legend
-  var extHtml="";
-  for(var d=0;d<Math.min(DN,7);d++){
-    var exs=getWTExtremes(d);
-    if(!exs.length)continue;
-    var dd=new Date(now.getFullYear(),now.getMonth(),now.getDate()+d);
-    extHtml+='<span style="color:#7ec8e3;font-weight:500">'+DAYS[dd.getDay()]+':</span> ';
-    exs.forEach(function(e){
-      var col=e.type==="High"?"#3dd68c":"#f0a030";
-      var h=parseFloat(e.h);
-      extHtml+='<span style="color:'+col+'">'+(e.type==="High"?"▲":"▼")+Math.max(0,h).toFixed(2)+"m@"+e.time+"</span> ";
-    });
-  }
-  document.getElementById("tideExtremes").innerHTML=extHtml;
-}
-
 function showDayFish(dayIndex){
   if(!wxData)return;
-  var wx=wxData;
-  var dateStr=wx.daily.time[dayIndex];
-  // For today use current wind, for future days use daily max
+  var wx=wxData,dateStr=wx.daily.time[dayIndex];
   var windSpd=dayIndex===0?Math.round(wx.current.wind_speed_10m):wx.daily.wind_speed_10m_max?Math.round(wx.daily.wind_speed_10m_max[dayIndex]):10;
   var si=dayIndex*24;
   var pressures=wx.hourly.surface_pressure?wx.hourly.surface_pressure.slice(si,si+24):[];
   var params=calcFishing(dayIndex,pressures,windSpd);
   document.getElementById("dayFishWrap").style.display="block";
-  document.getElementById("dayFishTitle").textContent="Fishing conditions — "+fmtDate(dateStr)+(dayIndex===0?" (current wind used)":"");
+  document.getElementById("dayFishTitle").textContent="Fishing conditions — "+fmtDate(dateStr)+(dayIndex===0?" (current wind)":"");
   document.getElementById("dayFishContent").innerHTML=buildFishingHTML(params,"day"+dayIndex);
   document.getElementById("dayFishWrap").scrollIntoView({behavior:"smooth"});
   document.querySelectorAll(".day").forEach(function(el,i){el.classList.toggle("selected",i===dayIndex);});
@@ -758,8 +708,7 @@ async function doLoad(){
   }catch(e){document.getElementById("locLine").textContent="Geocoding error: "+e.message;}
   document.getElementById("locLine").textContent=found?"📍 "+curName+" ("+curLat.toFixed(3)+"°, "+curLng.toFixed(3)+"°)":"Location not found — using previous ("+curName+")";
   buildRadar(curLat,curLng);
-
-  if(wtKey){
+  if(wtKey&&wtKey.indexOf("xxxx")===-1){
     document.getElementById("wtKeyStatus").textContent="Fetching tides…";
     wtTideData=await fetchWorldTides(curLat,curLng);
     document.getElementById("wtKeyStatus").textContent=wtTideData?"✓ Real tide data":"⚠ Tide API failed";
@@ -769,7 +718,6 @@ async function doLoad(){
     wtTideData=null;
     document.getElementById("tideSectionTitle").textContent="Tide, wind and rain — harmonic model (indicative)";
   }
-
   try{
     var wxUrl="https://api.open-meteo.com/v1/forecast?latitude="+curLat+"&longitude="+curLng+
       "&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,visibility,uv_index"+
@@ -781,7 +729,6 @@ async function doLoad(){
       "&timezone=Australia%2FAdelaide";
     var results=await Promise.all([fetch(wxUrl).then(function(r){return r.json();}),fetch(marUrl).then(function(r){return r.json();}).catch(function(){return null;})]);
     var wx=results[0],marine=results[1];wxData=wx;
-
     var cur=wx.current,code=cur.weather_code||0;
     document.getElementById("cond").textContent=(WICO[code]||"?")+" "+(WMO[code]||"Unknown");
     document.getElementById("temp").textContent=Math.round(cur.temperature_2m)+"°C";
@@ -792,23 +739,16 @@ async function doLoad(){
     document.getElementById("precip").textContent=cur.precipitation.toFixed(1)+" mm";
     document.getElementById("vis").textContent=cur.visibility!=null?(cur.visibility/1000).toFixed(1)+" km":"—";
     document.getElementById("uvSub").textContent="UV Index: "+(cur.uv_index!=null?cur.uv_index:"—");
-
     var spd=Math.round(cur.wind_speed_10m),badges=[];
     if(spd<20)badges.push({bg:"#0e2e1a",col:"#3dd68c",txt:"✓ Good wind"});else if(spd<35)badges.push({bg:"#2e1e0a",col:"#f0a030",txt:"⚠ Moderate wind"});else badges.push({bg:"#2e1e0a",col:"#f0a030",txt:"⚠ Strong wind"});
     if([0,1,2].indexOf(code)>-1)badges.push({bg:"#0e2e1a",col:"#3dd68c",txt:"✓ Fine weather"});else if([61,63,65,80,81,82].indexOf(code)>-1)badges.push({bg:"#2e1e0a",col:"#f0a030",txt:"⚠ Rain"});
     var uv=cur.uv_index;if(uv>=6)badges.push({bg:"#2e1e0a",col:"#f0a030",txt:"⚠ High UV "+uv});else badges.push({bg:"#0e2e1a",col:"#3dd68c",txt:"✓ UV "+uv});
     var hh=new Date().getHours();if(hh>=5&&hh<=7)badges.push({bg:"#0a1e3a",col:"#4a9adf",txt:"🌅 Dawn — prime"});else if(hh>=17&&hh<=19)badges.push({bg:"#0a1e3a",col:"#4a9adf",txt:"🌇 Dusk — prime"});
     document.getElementById("badges").innerHTML=badges.map(function(b){return'<span class="badge" style="background:'+b.bg+';color:'+b.col+'">'+b.txt+"</span>";}).join("");
-
-    // Fishing conditions now
     var pressures=wx.hourly.surface_pressure||[];
     var fishParams=calcFishing(0,pressures.slice(0,24),spd);
     document.getElementById("fishingContent").innerHTML=buildFishingHTML(fishParams,"today");
-
-    // Main chart
     setTimeout(function(){drawMainChart(wx);},150);
-
-    // Ocean conditions
     var mc=marine&&marine.current;
     var swells=[
       {label:"Wave height",val:mc&&mc.wave_height!=null?mc.wave_height.toFixed(1)+" m":"—"},
@@ -819,14 +759,10 @@ async function doLoad(){
       {label:"Wind waves",val:mc&&mc.wind_wave_height!=null?mc.wind_wave_height.toFixed(1)+" m":"—"}
     ];
     document.getElementById("swellRow").innerHTML=mc?swells.map(function(s){return'<div><div class="swell-lbl">'+s.label+'</div><div class="swell-val">'+s.val+"</div></div>";}).join(""):'<span style="color:#3a5a7a">Marine data unavailable</span>';
-
-    // 24hr chart
     var t24=wx.hourly.temperature_2m.slice(0,24),w24=wx.hourly.wind_speed_10m.slice(0,24);
     var r24=wx.hourly.precipitation_probability.slice(0,24),d24=wx.hourly.wind_direction_10m?wx.hourly.wind_direction_10m.slice(0,24):[];
     var l24=wx.hourly.time.slice(0,24).map(function(t){return t.slice(11,16);});
     var ref={inst:hourlyChartInst};buildChart("hourlyChart",t24,w24,r24,d24,l24,ref,0);hourlyChartInst=ref.inst;
-
-    // 7-day forecast cards
     document.getElementById("forecastRow").innerHTML=wx.daily.time.slice(0,7).map(function(t,i){
       var dt=new Date(t),dc=wx.daily.weather_code[i];
       return'<div class="day" onclick="showDayFish('+i+')">'+
@@ -837,12 +773,11 @@ async function doLoad(){
         '<div class="day-lo">'+Math.round(wx.daily.temperature_2m_min[i])+"°</div>"+
         '<div class="day-rain">'+(wx.daily.precipitation_probability_max[i]||0)+"% 💧</div></div>";
     }).join("");
-
   }catch(e){document.getElementById("metricGrid").innerHTML='<div class="err">Weather error: '+e.message+"</div>";}
 }
 
 doLoad();
-if(wtKey)document.getElementById("wtKeyInput").value=wtKey;
+if(wtKey&&wtKey.indexOf("xxxx")===-1)document.getElementById("wtKeyInput").value=wtKey;
 </script>
 </body>
 </html>
